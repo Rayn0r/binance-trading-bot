@@ -103,10 +103,12 @@ const isExceedingMaxBuyOpenOrders = async (logger, data) => {
       botOptions: {
         orderLimit: {
           enabled: orderLimitEnabled,
-          maxBuyOpenOrders: orderLimitMaxBuyOpenOrders
+          maxBuyOpenOrders: orderLimitMaxBuyOpenOrders,
+          maxOpenTrades: orderLimitMaxOpenTrades
         }
       }
-    }
+    },
+    sell: { lastBuyPrice }
   } = data;
 
   if (orderLimitEnabled === false) {
@@ -114,8 +116,20 @@ const isExceedingMaxBuyOpenOrders = async (logger, data) => {
   }
 
   const currentBuyOpenOrders = await getNumberOfBuyOpenOrders(logger);
+  const currentOpenTrades = await getNumberOfOpenTrades(logger);
 
-  if (currentBuyOpenOrders >= orderLimitMaxBuyOpenOrders) {
+  // as long as we have not reached orderLimitMaxBuyOpenOrders
+  if (currentBuyOpenOrders < orderLimitMaxBuyOpenOrders) {
+    // If the last buy price is not recorded, this is a new trade.
+    if (!lastBuyPrice) {
+      // make sure not to allow more buy orders than MaxOpenTrades when a new coin is bought
+      if (currentBuyOpenOrders > orderLimitMaxOpenTrades - currentOpenTrades) {
+        return true;
+      }
+    }
+  }
+  // as soon as currentBuyOpenOrders is greater or equal to orderLimitMaxBuyOpenOrders
+  else {
     return true;
   }
 
@@ -146,18 +160,27 @@ const isExceedingMaxOpenTrades = async (logger, data) => {
     return false;
   }
 
-  let currentOpenTrades = await getNumberOfOpenTrades(logger);
+  const currentOpenTrades = await getNumberOfOpenTrades(logger);
 
   // If the last buy price is recorded, this is one of open trades.
-  // Deduct 1 from the current open trades and calculate it.
   if (lastBuyPrice) {
-    currentOpenTrades -= 1;
+    // The bot should always be allowed to buy more coins once it initially purchased them
+    // and there are grid trades left.
+    // If you lower your orderLimitMaxOpenTrades or if you manually add a buy price to a coin you already own,
+    // we must still check whether or not orderLimitMaxOpenTrades is reached.
+    if (currentOpenTrades > orderLimitMaxOpenTrades) {
+      return true;
+    }
+  }
+  // If the last buy price is not recorded, this is a new trade.
+  else {
+    // Do no place an order when we have already reached orderLimitMaxOpenTrades
+    if (currentOpenTrades => orderLimitMaxOpenTrades) {
+      return true;
+    }
   }
 
-  if (currentOpenTrades >= orderLimitMaxOpenTrades) {
-    return true;
-  }
-
+  // In all other cases return false
   return false;
 };
 
