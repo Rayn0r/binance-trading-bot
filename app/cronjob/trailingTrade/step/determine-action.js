@@ -175,7 +175,7 @@ const isExceedingMaxOpenTrades = async (logger, data) => {
   // If the last buy price is not recorded, this is a new trade.
   else {
     // Do no place an order when we have already reached orderLimitMaxOpenTrades
-    if (currentOpenTrades => orderLimitMaxOpenTrades) {
+    if (currentOpenTrades >= orderLimitMaxOpenTrades) {
       return true;
     }
   }
