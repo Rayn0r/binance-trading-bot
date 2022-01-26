@@ -119,7 +119,7 @@ const isExceedingMaxBuyOpenOrders = async (logger, data) => {
   const currentOpenTrades = await getNumberOfOpenTrades(logger);
 
   // as long as we have not reached orderLimitMaxBuyOpenOrders
-  if (currentBuyOpenOrders <= orderLimitMaxBuyOpenOrders) {
+  if (currentBuyOpenOrders < orderLimitMaxBuyOpenOrders) {
     // If the last buy price is not recorded, this is a new trade.
     if (!lastBuyPrice) {
       // make sure not to allow more buy orders than MaxOpenTrades when a new coin is bought
